@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+build
+.env
+.env*.local
+!.env.example
+*.tsbuildinfo
+.vercel
+.DS_Store
+coverage
+prisma/dev.db
+.tmp-screenshots

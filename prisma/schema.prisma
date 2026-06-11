@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  LICENCIADO_PRINCIPAL
+  ABOGADO_ASOCIADO
+  SECRETARIA_SENIOR
+  SECRETARIA_LIMITADA
+  CLIENTE_INVITADO
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  DISABLED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELED
+}
+
+enum CaseFileStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELED
+}
+
+enum CalendarEventType {
+  AUDIENCIA
+  VENCIMIENTO
+  REUNION
+  PRESENTACION_DOCUMENTO
+  RECORDATORIO_INTERNO
+}
+
+enum DocumentStatus {
+  ACTIVE
+  SUPERSEDED
+  SOFT_DELETED
+}
+
+model Organization {
+  id                 String             @id @default(cuid())
+  name               String
+  legalName          String?
+  nit                String?
+  ownerUserId        String?
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  plan               String             @default("Individual")
+  status             String             @default("ACTIVE")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  owner          User?           @relation("OrganizationOwner", fields: [ownerUserId], references: [id])
+  users          User[]          @relation("OrganizationUsers")
+  roles          Role[]
+  clients        Client[]
+  caseFiles      CaseFile[]
+  documents      Document[]
+  tasks          Task[]
+  calendarEvents CalendarEvent[]
+  auditLogs      AuditLog[]
+  invitations    Invitation[]
+
+  @@index([subscriptionStatus])
+  @@index([ownerUserId])
+}
+
+model User {
+  id             String     @id @default(cuid())
+  name           String
+  email          String     @unique
+  passwordHash   String
+  role           UserRole   @default(ABOGADO_ASOCIADO)
+  status         UserStatus @default(INVITED)
+  organizationId String?
+  roleId         String?
+  mfaEnabled     Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization          Organization?   @relation("OrganizationUsers", fields: [organizationId], references: [id])
+  customRole            Role?           @relation(fields: [roleId], references: [id])
+  ownedOrganizations    Organization[]  @relation("OrganizationOwner")
+  responsibleCaseFiles  CaseFile[]      @relation("CaseResponsible")
+  uploadedDocuments     Document[]      @relation("DocumentUploader")
+  assignedTasks         Task[]          @relation("TaskAssignee")
+  auditLogs             AuditLog[]
+  invitationsSent       Invitation[]    @relation("InvitationSender")
+  sessions              AuthSession[]
+
+  @@index([organizationId])
+  @@index([role])
+  @@index([status])
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Role {
+  id             String   @id @default(cuid())
+  name           String
+  organizationId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization?    @relation(fields: [organizationId], references: [id])
+  users        User[]
+  permissions  RolePermission[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  description String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Client {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  dpi            String?
+  nit            String?
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  caseFiles    CaseFile[]
+
+  @@index([organizationId])
+  @@index([name])
+  @@index([dpi])
+  @@index([nit])
+}
+
+model CaseFile {
+  id                String         @id @default(cuid())
+  organizationId    String
+  clientId          String
+  title             String
+  caseNumber        String?
+  court             String?
+  type              String?
+  status            CaseFileStatus @default(ACTIVE)
+  responsibleUserId String?
+  description       String?
+  importantDates    Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  organization    Organization    @relation(fields: [organizationId], references: [id])
+  client          Client          @relation(fields: [clientId], references: [id])
+  responsibleUser User?           @relation("CaseResponsible", fields: [responsibleUserId], references: [id])
+  documents       Document[]
+  tasks           Task[]
+  calendarEvents  CalendarEvent[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([responsibleUserId])
+  @@index([status])
+}
+
+model Document {
+  id             String         @id @default(cuid())
+  organizationId String
+  caseFileId     String
+  uploadedById   String
+  name           String
+  fileUrl        String
+  fileType       String?
+  size           Int
+  version        Int            @default(1)
+  status         DocumentStatus @default(ACTIVE)
+  checksum       String?
+  deletedAt      DateTime?
+  createdAt      DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  caseFile     CaseFile     @relation(fields: [caseFileId], references: [id])
+  uploadedBy   User         @relation("DocumentUploader", fields: [uploadedById], references: [id])
+
+  @@index([organizationId])
+  @@index([caseFileId])
+  @@index([uploadedById])
+  @@index([status])
+}
+
+model Task {
+  id             String     @id @default(cuid())
+  organizationId String
+  caseFileId     String?
+  assignedToId   String?
+  title          String
+  description    String?
+  status         TaskStatus @default(PENDING)
+  dueDate        DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  caseFile     CaseFile?    @relation(fields: [caseFileId], references: [id])
+  assignedTo   User?        @relation("TaskAssignee", fields: [assignedToId], references: [id])
+
+  @@index([organizationId])
+  @@index([caseFileId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model CalendarEvent {
+  id             String            @id @default(cuid())
+  organizationId String
+  caseFileId     String?
+  title          String
+  description    String?
+  location       String?
+  startDate      DateTime
+  endDate        DateTime?
+  type           CalendarEventType
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  caseFile     CaseFile?    @relation(fields: [caseFileId], references: [id])
+
+  @@index([organizationId])
+  @@index([caseFileId])
+  @@index([startDate])
+  @@index([type])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  userId         String?
+  action         String
+  entityType     String
+  entityId       String?
+  ipAddress      String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model Invitation {
+  id             String     @id @default(cuid())
+  organizationId String
+  email          String
+  role           UserRole
+  invitedById    String
+  tokenHash      String     @unique
+  acceptedAt     DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime   @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  invitedBy    User         @relation("InvitationSender", fields: [invitedById], references: [id])
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([expiresAt])
+}

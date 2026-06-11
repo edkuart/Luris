@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf8f3;
+  --foreground: #2b2b2b;
+  --card: #fffdf8;
+  --card-foreground: #2b2b2b;
+  --popover: #fffdf8;
+  --popover-foreground: #2b2b2b;
+  --primary: #3e2723;
+  --primary-foreground: #faf8f3;
+  --secondary: #f5f0e6;
+  --secondary-foreground: #3e2723;
+  --muted: #eee7d9;
+  --muted-foreground: #706863;
+  --accent: #b08d57;
+  --accent-foreground: #2b2b2b;
+  --destructive: #b42318;
+  --destructive-foreground: #fffdf8;
+  --border: #dfd4c2;
+  --input: #d7c9b6;
+  --ring: #b08d57;
+  --sage: #53665b;
+  --steel: #40566b;
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-ui);
+  --font-serif: var(--font-display);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+}
+
+body {
+  min-height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-ui), Inter, "Source Sans 3", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.luris-display {
+  font-family: var(--font-display), Merriweather, "Cormorant Garamond", Georgia, serif;
+  letter-spacing: 0;
+}
+
+.luris-surface {
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(250, 248, 243, 0.96));
+}
+
+.luris-focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.luris-focus:focus-visible {
+  box-shadow: 0 0 0 3px rgba(176, 141, 87, 0.28);
+}
