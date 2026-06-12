@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const demoPassword = process.env.DEMO_USER_PASSWORD ?? 'LurisDemo2026!'
-const demoEmail = (process.env.DEMO_USER_EMAIL ?? 'edkuart@gmail.com').toLowerCase()
+const demoEmail = (process.env.DEMO_USER_EMAIL ?? 'demo@luris.gt').toLowerCase()
 
 function hashPassword(password) {
   const salt = randomBytes(16).toString('base64url')
