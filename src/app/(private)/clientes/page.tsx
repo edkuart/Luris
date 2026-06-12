@@ -3,30 +3,41 @@ import { Search } from 'lucide-react'
 import { ClientCreateForm } from '@/components/clients/client-create-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { prisma } from '@/lib/prisma'
+import { apiFetch } from '@/lib/api'
 import { clients as mockClients } from '@/lib/mock-data'
 import { requireSession } from '@/server/auth/session'
 
+type ClientRow = {
+  id: string
+  name: string
+  dpi: string | null
+  nit: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  updatedAt: string
+  _count: { caseFiles: number }
+}
+
 export default async function ClientesPage() {
-  const session = await requireSession()
-  const clients =
+  await requireSession()
+
+  const clients: ClientRow[] =
     process.env.AUTH_MODE === 'mock'
-      ? mockClients.map((client) => ({
-          id: client.id,
-          name: client.name,
-          dpi: client.dpi === '-' ? null : client.dpi,
-          nit: client.nit,
-          email: client.email,
-          phone: client.phone,
-          address: client.address,
-          updatedAt: new Date('2026-06-11T12:00:00-06:00'),
-          _count: { caseFiles: client.activeCases },
+      ? mockClients.map((c) => ({
+          id: c.id,
+          name: c.name,
+          dpi: c.dpi === '-' ? null : c.dpi,
+          nit: c.nit,
+          email: c.email,
+          phone: c.phone,
+          address: c.address,
+          updatedAt: new Date('2026-06-11T12:00:00-06:00').toISOString(),
+          _count: { caseFiles: c.activeCases },
         }))
-      : await prisma.client.findMany({
-          where: { organizationId: session.organizationId },
-          include: { _count: { select: { caseFiles: true } } },
-          orderBy: { updatedAt: 'desc' },
-        })
+      : await apiFetch('/api/clients')
+          .then((r) => r.json())
+          .then((d) => d.clients ?? [])
 
   return (
     <div className="space-y-5">
@@ -67,7 +78,7 @@ export default async function ClientesPage() {
                     <td>{client.phone ?? '-'}</td>
                     <td>{client.email ?? '-'}</td>
                     <td>{client._count.caseFiles}</td>
-                    <td className="text-muted-foreground">{client.updatedAt.toLocaleDateString('es-GT')}</td>
+                    <td className="text-muted-foreground">{new Date(client.updatedAt).toLocaleDateString('es-GT')}</td>
                   </tr>
                 ))}
               </tbody>

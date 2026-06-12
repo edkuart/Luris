@@ -1,46 +1,40 @@
-import { headers } from 'next/headers'
-import { prisma } from '@/lib/prisma'
-import { loginSchema } from '@/lib/validations'
-import { recordAuditEvent } from '@/server/audit/audit-events'
-import { verifyPassword } from '@/server/auth/password'
-import { createSessionCookie } from '@/server/auth/session'
+import { cookies } from 'next/headers'
+import { SESSION_COOKIE } from '@/server/auth/session'
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
-  const parsed = loginSchema.safeParse(body)
 
-  if (!parsed.success) {
-    return Response.json({ error: 'Credenciales invalidas' }, { status: 400 })
+  const apiUrl = process.env.API_URL
+  if (!apiUrl) {
+    return Response.json({ error: 'Configuracion de servidor incompleta' }, { status: 500 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: parsed.data.email.toLowerCase() },
-  })
+  const upstream = await fetch(`${apiUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).catch(() => null)
 
-  if (!user || user.status !== 'ACTIVE' || !verifyPassword(parsed.data.password, user.passwordHash)) {
-    return Response.json({ error: 'Correo o contrasena incorrectos' }, { status: 401 })
+  if (!upstream) {
+    return Response.json({ error: 'No se pudo conectar al servidor' }, { status: 503 })
   }
 
-  await createSessionCookie(user)
+  const data = await upstream.json().catch(() => null)
 
-  const headerStore = await headers()
-  await recordAuditEvent({
-    organizationId: user.organizationId,
-    userId: user.id,
-    action: 'auth.login',
-    entityType: 'User',
-    entityId: user.id,
-    ipAddress: headerStore.get('x-forwarded-for')?.split(',')[0]?.trim(),
-    metadata: { email: user.email, role: user.role },
+  if (!upstream.ok) {
+    return Response.json(data ?? { error: 'Error al iniciar sesion' }, { status: upstream.status })
+  }
+
+  const { token, expiresAt, user } = data as { token: string; expiresAt: string; user: unknown }
+
+  const cookieStore = await cookies()
+  cookieStore.set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    expires: new Date(expiresAt),
   })
 
-  return Response.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      organizationId: user.organizationId,
-    },
-  })
+  return Response.json({ user })
 }

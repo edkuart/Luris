@@ -1,0 +1,27 @@
+{
+  "name": "luris-api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "prisma generate && tsc",
+    "start": "prisma migrate deploy && node dist/index.js",
+    "seed": "node prisma/seed.mjs",
+    "seed:user": "node prisma/seed-initial-user.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jose": "^6.1.2",
+    "prisma": "^6.19.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.3",
+    "@types/node": "^20",
+    "tsx": "^4.19.3",
+    "typescript": "^5"
+  }
+}

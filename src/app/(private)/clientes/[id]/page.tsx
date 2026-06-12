@@ -3,14 +3,16 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, BriefcaseBusiness } from 'lucide-react'
 import { ClientEditForm } from '@/components/clients/client-edit-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { prisma } from '@/lib/prisma'
+import { apiFetch } from '@/lib/api'
 import { caseFiles, clients as mockClients } from '@/lib/mock-data'
 import { requireSession } from '@/server/auth/session'
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const session = await requireSession()
+  await requireSession()
   const { id } = await params
+
   const mockClient = mockClients.find((item) => item.id === id)
+
   const client =
     process.env.AUTH_MODE === 'mock' && mockClient
       ? {
@@ -23,31 +25,18 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           address: mockClient.address,
           notes: mockClient.notes,
           caseFiles: caseFiles
-            .filter((caseFile) => caseFile.clientId === mockClient.id)
-            .map((caseFile) => ({
-              id: caseFile.id,
-              title: caseFile.title,
-              caseNumber: caseFile.caseNumber,
-              court: caseFile.court,
-              status: caseFile.status,
+            .filter((cf) => cf.clientId === mockClient.id)
+            .map((cf) => ({
+              id: cf.id,
+              title: cf.title,
+              caseNumber: cf.caseNumber,
+              court: cf.court,
+              status: cf.status,
             })),
         }
-      : await prisma.client.findFirst({
-          where: { id, organizationId: session.organizationId },
-          include: {
-            caseFiles: {
-              orderBy: { updatedAt: 'desc' },
-              select: {
-                id: true,
-                title: true,
-                caseNumber: true,
-                court: true,
-                status: true,
-                updatedAt: true,
-              },
-            },
-          },
-        })
+      : await apiFetch(`/api/clients/${id}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => d?.client ?? null)
 
   if (!client) notFound()
 
@@ -90,10 +79,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </CardHeader>
             <CardContent className="space-y-3">
               {client.caseFiles.length ? (
-                client.caseFiles.map((caseFile) => (
-                  <div key={caseFile.id} className="rounded-md border bg-secondary p-3">
-                    <p className="text-sm font-semibold text-primary">{caseFile.caseNumber ?? 'Sin numero'} · {caseFile.title}</p>
-                    <p className="text-xs text-muted-foreground">{caseFile.court ?? 'Sin juzgado'} · {caseFile.status}</p>
+                client.caseFiles.map((cf: { id: string; title: string; caseNumber: string | null; court: string | null; status: string }) => (
+                  <div key={cf.id} className="rounded-md border bg-secondary p-3">
+                    <p className="text-sm font-semibold text-primary">{cf.caseNumber ?? 'Sin numero'} · {cf.title}</p>
+                    <p className="text-xs text-muted-foreground">{cf.court ?? 'Sin juzgado'} · {cf.status}</p>
                   </div>
                 ))
               ) : (
