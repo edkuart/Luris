@@ -3,12 +3,12 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, BriefcaseBusiness, FileSignature } from 'lucide-react'
 import { ClientEditForm } from '@/components/clients/client-edit-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { apiFetch } from '@/lib/api'
 import { caseFiles, clients as mockClients, notarialInstruments } from '@/lib/mock-data'
 import { requireSession } from '@/server/auth/session'
+import { getClient } from '@/server/clients'
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireSession()
+  const session = await requireSession()
   const { id } = await params
 
   const mockClient = mockClients.find((item) => item.id === id)
@@ -34,9 +34,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               status: cf.status,
             })),
         }
-      : await apiFetch(`/api/clients/${id}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((d) => d?.client ?? null)
+      : await getClient(session.organizationId, id)
 
   if (!client) notFound()
 

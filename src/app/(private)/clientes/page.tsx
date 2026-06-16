@@ -1,16 +1,36 @@
 import { ClientCreateForm } from '@/components/clients/client-create-form'
 import { PeopleDirectory } from '@/components/clients/people-directory'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { buildPeopleDirectory } from '@/lib/mock-data'
+import { buildPeopleDirectory, type DirectoryPerson } from '@/lib/mock-data'
 import { requireSession } from '@/server/auth/session'
+import { listClients } from '@/server/clients'
 
 export default async function PersonasPage() {
-  await requireSession()
+  const session = await requireSession()
 
-  // Directorio unificado: clientes de juicios + comparecientes de escrituras.
-  // Hoy se deriva de los datos mock; al conectar backend se reemplaza por un
-  // endpoint de personas con su involucramiento por pilar.
-  const people = buildPeopleDirectory()
+  // Directorio unificado de personas. En modo mock se deriva de los datos de
+  // ejemplo (clientes + comparecientes). Con datos reales se listan los clientes
+  // desde la DB; los comparecientes notariales se sumaran al crear su modulo.
+  let people: DirectoryPerson[]
+  if (process.env.AUTH_MODE === 'mock') {
+    people = buildPeopleDirectory()
+  } else {
+    const clients = await listClients(session.organizationId)
+    people = clients.map((client) => ({
+      id: client.id,
+      name: client.name,
+      type: client.nit ? 'Cliente / sociedad' : 'Cliente',
+      dpi: client.dpi,
+      nit: client.nit,
+      email: client.email,
+      phone: client.phone,
+      address: client.address,
+      roles: ['Cliente'],
+      juicios: client._count.caseFiles,
+      escrituras: 0,
+      href: `/clientes/${client.id}`,
+    }))
+  }
 
   const totalJuicios = people.filter((p) => p.juicios > 0).length
   const totalEscrituras = people.filter((p) => p.escrituras > 0).length
