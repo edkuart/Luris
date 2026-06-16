@@ -33,12 +33,15 @@ export type CaseFileMock = {
   court: string
   type: string
   status: 'Activo' | 'En seguimiento' | 'Pendiente de audiencia'
+  stage: 'Demanda' | 'Emplazamiento' | 'Prueba/Audiencias' | 'Sentencia' | 'Impugnacion'
   responsible: string
   description: string
   importantDate: string
   tasksOpen: number
   documentsCount: number
 }
+
+export type Pillar = 'Juicios' | 'Escrituras'
 
 export type TaskMock = {
   id: string
@@ -49,6 +52,7 @@ export type TaskMock = {
   dueDate: string
   assignedTo: string
   caseNumber: string
+  pillar: Pillar
 }
 
 export type HearingMock = {
@@ -439,6 +443,7 @@ export const caseFiles: CaseFileMock[] = [
     court: 'Juzgado Sexto de Primera Instancia Civil',
     type: 'Civil - Ejecutivo',
     status: 'Activo',
+    stage: 'Sentencia',
     responsible: 'Lic. Eduardo Duarte',
     description: 'Recuperacion de saldo por contrato de suministro firmado en Alta Verapaz.',
     importantDate: '2026-06-14',
@@ -454,6 +459,7 @@ export const caseFiles: CaseFileMock[] = [
     court: 'Juzgado Segundo Pluripersonal de Familia',
     type: 'Familia - Alimentos',
     status: 'Pendiente de audiencia',
+    stage: 'Prueba/Audiencias',
     responsible: 'Licda. Sofia Cabrera',
     description: 'Preparacion de prueba documental y propuesta de convenio.',
     importantDate: '2026-06-12',
@@ -469,6 +475,7 @@ export const caseFiles: CaseFileMock[] = [
     court: 'Juzgado Tercero de Trabajo y Prevision Social',
     type: 'Laboral',
     status: 'En seguimiento',
+    stage: 'Emplazamiento',
     responsible: 'Lic. Mario Pineda',
     description: 'Audiencia de conciliacion y recepcion de prueba programada.',
     importantDate: '2026-06-18',
@@ -484,6 +491,7 @@ export const caseFiles: CaseFileMock[] = [
     court: 'Asesoria mercantil interna',
     type: 'Mercantil - Contratos',
     status: 'Activo',
+    stage: 'Demanda',
     responsible: 'Lic. Eduardo Duarte',
     description: 'Revision de clausulas de entrega, arbitraje y penalidades.',
     importantDate: '2026-06-21',
@@ -502,6 +510,7 @@ export const tasks: TaskMock[] = [
     dueDate: 'Hoy 16:00',
     assignedTo: 'Andrea Mendez',
     caseNumber: 'C01002-2026-00418',
+    pillar: 'Juicios',
   },
   {
     id: 'tsk-002',
@@ -512,6 +521,7 @@ export const tasks: TaskMock[] = [
     dueDate: 'Manana 09:30',
     assignedTo: 'Sofia Cabrera',
     caseNumber: 'FAM-01190-2026-00077',
+    pillar: 'Juicios',
   },
   {
     id: 'tsk-003',
@@ -522,6 +532,7 @@ export const tasks: TaskMock[] = [
     dueDate: '2026-06-13',
     assignedTo: 'Andrea Mendez',
     caseNumber: 'LAB-01043-2026-00121',
+    pillar: 'Juicios',
   },
   {
     id: 'tsk-004',
@@ -532,6 +543,29 @@ export const tasks: TaskMock[] = [
     dueDate: 'Ayer',
     assignedTo: 'Mario Pineda',
     caseNumber: 'MER-2026-00034',
+    pillar: 'Juicios',
+  },
+  {
+    id: 'tsk-005',
+    title: 'Solicitar certificacion registral del inmueble',
+    description: 'Gestionar certificacion vigente para la compraventa antes de la firma.',
+    status: 'Pendiente',
+    priority: 'Alta',
+    dueDate: 'Hoy 14:00',
+    assignedTo: 'Andrea Mendez',
+    caseNumber: 'PROTO-2026-001',
+    pillar: 'Escrituras',
+  },
+  {
+    id: 'tsk-006',
+    title: 'Preparar testimonio especial para el AGP',
+    description: 'Emitir testimonio especial dentro del plazo de 25 dias habiles tras la firma.',
+    status: 'En proceso',
+    priority: 'Media',
+    dueDate: 'Manana 11:00',
+    assignedTo: 'Lucia Castillo',
+    caseNumber: 'ACTA-2026-014',
+    pillar: 'Escrituras',
   },
 ]
 
@@ -2232,4 +2266,180 @@ export const courtSummary = {
   value: '4',
   helper: 'Civil, Familia, Laboral y Mercantil',
   icon: Scale,
+}
+
+// --- Directorio unificado de Personas (Clientes + Comparecientes) ---
+// Una sola entidad reutilizable por ambos pilares: una persona puede ser
+// cliente de un juicio y, a la vez, compareciente de una escritura.
+
+export type PersonRole = 'Cliente' | 'Compareciente'
+
+export type DirectoryPerson = {
+  id: string
+  name: string
+  type: string
+  dpi: string | null
+  nit: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  roles: PersonRole[]
+  juicios: number
+  escrituras: number
+  href: string
+}
+
+const normalizeName = (value: string) => value.trim().toLowerCase()
+
+// Cantidad de escrituras vinculadas a una persona, por nombre, sin duplicar
+// instrumentos referenciados tanto en el instrumento como en el compareciente.
+function escriturasForName(name: string): number {
+  const ids = new Set<string>()
+  notarialInstruments.forEach((instrument) => {
+    if (normalizeName(instrument.clientName) === normalizeName(name)) ids.add(instrument.id)
+  })
+  notarialParties.forEach((party) => {
+    if (normalizeName(party.name) === normalizeName(name)) party.instruments.forEach((id) => ids.add(id))
+  })
+  return ids.size
+}
+
+export function buildPeopleDirectory(): DirectoryPerson[] {
+  const byName = new Map<string, DirectoryPerson>()
+
+  clients.forEach((client) => {
+    byName.set(normalizeName(client.name), {
+      id: client.id,
+      name: client.name,
+      type: client.type,
+      dpi: client.dpi === '-' ? null : client.dpi,
+      nit: client.nit === '-' ? null : client.nit,
+      email: client.email,
+      phone: client.phone,
+      address: client.address,
+      roles: ['Cliente'],
+      juicios: client.activeCases,
+      escrituras: escriturasForName(client.name),
+      href: `/clientes/${client.id}`,
+    })
+  })
+
+  notarialParties.forEach((party) => {
+    const key = normalizeName(party.name)
+    const existing = byName.get(key)
+    if (existing) {
+      if (!existing.roles.includes('Compareciente')) existing.roles.push('Compareciente')
+      return
+    }
+    byName.set(key, {
+      id: party.id,
+      name: party.name,
+      type: party.type,
+      dpi: party.dpi === '-' ? null : party.dpi,
+      nit: party.nit === '-' ? null : party.nit,
+      email: party.email,
+      phone: party.phone,
+      address: party.address,
+      roles: ['Compareciente'],
+      juicios: 0,
+      escrituras: escriturasForName(party.name),
+      href: '/escrituras/comparecientes',
+    })
+  })
+
+  return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name, 'es'))
+}
+
+// --- Vistas transversales con pilar (Juicios + Escrituras) ---
+
+const caseIdByNumber = new Map(caseFiles.map((c) => [c.caseNumber, c.id]))
+const instrumentById = new Map(notarialInstruments.map((i) => [i.id, i]))
+
+export type CalendarItem = {
+  id: string
+  pillar: Pillar
+  title: string
+  date: string
+  time: string
+  location: string
+  kind: string
+  reference: string
+  responsible: string
+  href: string
+}
+
+export function unifiedCalendar(): CalendarItem[] {
+  const judicial: CalendarItem[] = hearings.map((event) => {
+    const caseId = caseIdByNumber.get(event.caseNumber)
+    return {
+      id: event.id,
+      pillar: 'Juicios',
+      title: event.title,
+      date: event.date,
+      time: event.time,
+      location: event.location,
+      kind: event.type,
+      reference: event.caseNumber,
+      responsible: event.responsible,
+      href: caseId ? `/juicios/${caseId}` : '/juicios/audiencias',
+    }
+  })
+
+  const notarial: CalendarItem[] = notarialAppointments.map((appt) => {
+    const instrument = instrumentById.get(appt.instrumentId)
+    return {
+      id: appt.id,
+      pillar: 'Escrituras',
+      title: appt.title,
+      date: appt.date,
+      time: appt.time,
+      location: appt.location,
+      kind: appt.type,
+      reference: instrument?.protocolNumber ?? appt.instrumentId,
+      responsible: appt.responsible,
+      href: `/escrituras/${appt.instrumentId}`,
+    }
+  })
+
+  return [...judicial, ...notarial].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+}
+
+export type DocItem = {
+  id: string
+  pillar: Pillar
+  name: string
+  reference: string
+  kind: string
+  status: string
+  owner: string
+  href: string
+}
+
+export function unifiedDocuments(): DocItem[] {
+  const judicial: DocItem[] = documents.map((doc) => ({
+    id: doc.id,
+    pillar: 'Juicios',
+    name: doc.name,
+    reference: doc.caseNumber,
+    kind: `${doc.fileType} · v${doc.version}`,
+    status: doc.status,
+    owner: doc.uploadedBy,
+    href: `/documentos/${doc.id}`,
+  }))
+
+  const notarial: DocItem[] = notarialDocumentFlow.map((doc) => {
+    const instrument = instrumentById.get(doc.instrumentId)
+    return {
+      id: doc.id,
+      pillar: 'Escrituras',
+      name: doc.name,
+      reference: instrument?.protocolNumber ?? doc.instrumentId,
+      kind: doc.category,
+      status: doc.status,
+      owner: doc.owner,
+      href: `/escrituras/${doc.instrumentId}`,
+    }
+  })
+
+  return [...judicial, ...notarial]
 }

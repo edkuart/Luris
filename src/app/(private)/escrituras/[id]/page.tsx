@@ -28,8 +28,8 @@ export default async function NotarialInstrumentDetailPage({ params }: { params:
 
   return (
     <div className="space-y-5">
-      <Link href="/notarial" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Volver a notarial
+      <Link href="/escrituras" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
+        <ArrowLeft className="h-4 w-4" /> Volver a escrituras
       </Link>
 
       <div className="flex flex-col justify-between gap-3 xl:flex-row xl:items-end">
@@ -39,7 +39,7 @@ export default async function NotarialInstrumentDetailPage({ params }: { params:
           </p>
           <h1 className="luris-display mt-1 text-3xl font-bold text-primary">{instrument.title}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{instrument.clientName} · {instrument.type}</p>
-          <Link href="/notarial/documentos" className="mt-2 inline-flex text-sm font-semibold text-primary underline-offset-4 hover:underline">
+          <Link href="/escrituras/documentos" className="mt-2 inline-flex text-sm font-semibold text-primary underline-offset-4 hover:underline">
             Abrir flujo documental notarial
           </Link>
         </div>

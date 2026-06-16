@@ -1,24 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Activity,
   AlertTriangle,
   Bot,
-  BriefcaseBusiness,
   Building2,
   CalendarDays,
+  ChevronDown,
   ClipboardList,
   FileArchive,
   FileText,
   Gauge,
   Inbox,
-  LibraryBig,
   ListChecks,
   LockKeyhole,
   Menu,
+  Plus,
   Scale,
   Search,
   Settings,
@@ -27,20 +27,30 @@ import {
   X,
 } from 'lucide-react'
 import { firmProfile } from '@/lib/mock-data'
+import { ACTIVE_PILLARS, FUTURE_PILLARS } from '@/lib/pillars'
 import { cn } from '@/lib/utils'
 
-const primaryNav = [
-  { href: '/dashboard', label: 'Dashboard', icon: Gauge },
+// INICIO
+const inicioNav = [{ href: '/dashboard', label: 'Dashboard', icon: Gauge }]
+
+// TRABAJO — pilares centrales, derivados del registro unico de pilares
+const trabajoNav = ACTIVE_PILLARS.map((pillar) => ({ href: pillar.href, label: pillar.label, icon: pillar.icon }))
+const nextPillar = FUTURE_PILLARS[0]
+
+// TRANSVERSAL — herramientas compartidas por ambos pilares
+const transversalNav = [
+  { href: '/clientes', label: 'Personas', icon: Users },
+  { href: '/documentos', label: 'Documentos', icon: FileArchive },
+  { href: '/calendario', label: 'Calendario', icon: CalendarDays },
+  { href: '/tareas', label: 'Tareas', icon: ClipboardList },
+]
+
+// CONTROL — vistas de supervision (plegable, colapsado por defecto)
+const controlNav = [
   { href: '/productividad', label: 'Productividad', icon: Activity },
   { href: '/revision', label: 'Revision', icon: Inbox },
   { href: '/riesgos', label: 'Riesgos', icon: AlertTriangle },
   { href: '/plantillas', label: 'Plantillas', icon: ListChecks },
-  { href: '/clientes', label: 'Clientes', icon: Users },
-  { href: '/expedientes', label: 'Expedientes', icon: BriefcaseBusiness },
-  { href: '/notarial', label: 'Notarial', icon: LibraryBig },
-  { href: '/documentos', label: 'Documentos', icon: FileArchive },
-  { href: '/calendario', label: 'Calendario judicial', icon: CalendarDays },
-  { href: '/tareas', label: 'Tareas', icon: ClipboardList },
 ]
 
 const adminNav = [
@@ -55,7 +65,14 @@ const policyNav = [
   { href: '/cumplimiento/terminos', label: 'Terminos', icon: FileText },
 ]
 
-type NavItem = (typeof primaryNav | typeof adminNav | typeof policyNav)[number]
+type NavItem = (typeof trabajoNav | typeof adminNav | typeof policyNav)[number]
+
+function GroupLabel({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) {
+  if (collapsed) return null
+  return (
+    <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{children}</p>
+  )
+}
 
 function NavLink({ item, collapsed, onClick }: { item: NavItem; collapsed: boolean; onClick?: () => void }) {
   const pathname = usePathname()
@@ -80,20 +97,33 @@ function NavLink({ item, collapsed, onClick }: { item: NavItem; collapsed: boole
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false)
+  // Desktop ≥1280px via external store (sin setState en efecto).
+  const isDesktop = useSyncExternalStore(
+    (onChange) => {
+      const mql = window.matchMedia('(min-width: 1280px)')
+      mql.addEventListener('change', onChange)
+      return () => mql.removeEventListener('change', onChange)
+    },
+    () => window.matchMedia('(min-width: 1280px)').matches,
+    () => true,
+  )
+  const [openOverride, setOpenOverride] = useState<boolean | null>(null)
   const [collapsed, setCollapsed] = useState(false)
+  const [controlOpen, setControlOpen] = useState(false)
   const pathname = usePathname()
 
-  // Start open on desktop, closed on mobile
-  useEffect(() => {
-    const isDesktop = window.innerWidth >= 1280
-    setOpen(isDesktop)
-  }, [])
+  // En desktop arranca abierto; en movil cerrado. El usuario lo sobrescribe con
+  // el hamburguesa/colapso. El cierre al navegar en movil lo hace closeOnMobile
+  // desde el onClick de cada enlace (no hace falta un efecto sobre pathname).
+  const open = openOverride ?? isDesktop
 
-  // Close overlay on mobile when navigating
-  useEffect(() => {
-    if (window.innerWidth < 1280) setOpen(false)
-  }, [pathname])
+  const closeOnMobile = () => {
+    if (!isDesktop) setOpenOverride(false)
+  }
+
+  // Control queda expandido si el usuario lo abre o si la ruta activa es de Control.
+  const controlActive = controlNav.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+  const controlExpanded = controlOpen || controlActive
 
   const sidebarWidth = collapsed ? 'w-16' : 'w-72'
 
@@ -104,7 +134,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {open && (
         <div
           className="fixed inset-0 z-30 bg-black/40 xl:hidden"
-          onClick={() => setOpen(false)}
+          onClick={() => setOpenOverride(false)}
           aria-hidden="true"
         />
       )}
@@ -137,7 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
           {/* Close button on mobile / collapse toggle on desktop */}
           <button
-            onClick={() => collapsed ? setCollapsed(false) : (window.innerWidth < 1280 ? setOpen(false) : setCollapsed(true))}
+            onClick={() => collapsed ? setCollapsed(false) : (!isDesktop ? setOpenOverride(false) : setCollapsed(true))}
             className={cn(
               'hidden xl:flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[#f2eadc] hover:text-primary',
               collapsed && 'hidden',
@@ -147,7 +177,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <X className="h-4 w-4" />
           </button>
           <button
-            onClick={() => setOpen(false)}
+            onClick={() => setOpenOverride(false)}
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[#f2eadc] hover:text-primary xl:hidden"
             aria-label="Cerrar menu"
           >
@@ -156,20 +186,77 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className={cn('flex-1 space-y-6 overflow-y-auto py-5', collapsed ? 'px-2' : 'px-4')}>
+        <nav className={cn('flex-1 space-y-5 overflow-y-auto py-5', collapsed ? 'px-2' : 'px-4')}>
+          {/* INICIO */}
           <div className="space-y-1">
-            {primaryNav.map((item) => (
-              <NavLink key={item.href} item={item} collapsed={collapsed} onClick={() => { if (window.innerWidth < 1280) setOpen(false) }} />
+            {inicioNav.map((item) => (
+              <NavLink key={item.href} item={item} collapsed={collapsed} onClick={closeOnMobile} />
             ))}
           </div>
+
+          {/* TRABAJO — pilares centrales */}
           <div className="space-y-1 border-t pt-5">
-            {adminNav.map((item) => (
-              <NavLink key={item.href} item={item} collapsed={collapsed} onClick={() => { if (window.innerWidth < 1280) setOpen(false) }} />
+            <GroupLabel collapsed={collapsed}>Trabajo</GroupLabel>
+            {trabajoNav.map((item) => (
+              <NavLink key={item.href} item={item} collapsed={collapsed} onClick={closeOnMobile} />
+            ))}
+            {/* Slot reservado para el siguiente pilar del registro (enabled: false) */}
+            {!collapsed && nextPillar && (
+              <div
+                className="flex h-10 items-center gap-3 rounded-md border border-dashed border-[#e2d8c6] px-3 text-sm font-medium text-muted-foreground/70"
+                title={`${nextPillar.label}: ${nextPillar.description} (proximamente)`}
+              >
+                <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="truncate">{nextPillar.label} · proximamente</span>
+              </div>
+            )}
+          </div>
+
+          {/* TRANSVERSAL — herramientas compartidas */}
+          <div className="space-y-1 border-t pt-5">
+            <GroupLabel collapsed={collapsed}>Transversal</GroupLabel>
+            {transversalNav.map((item) => (
+              <NavLink key={item.href} item={item} collapsed={collapsed} onClick={closeOnMobile} />
             ))}
           </div>
+
+          {/* CONTROL — plegable */}
+          <div className="space-y-1 border-t pt-5">
+            {collapsed ? (
+              controlNav.map((item) => (
+                <NavLink key={item.href} item={item} collapsed={collapsed} onClick={closeOnMobile} />
+              ))
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setControlOpen((v) => !v)}
+                  className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground transition-colors hover:text-primary luris-focus"
+                  aria-expanded={controlExpanded}
+                >
+                  <span>Control</span>
+                  <ChevronDown className={cn('h-4 w-4 transition-transform', controlExpanded && 'rotate-180')} aria-hidden="true" />
+                </button>
+                {controlExpanded &&
+                  controlNav.map((item) => (
+                    <NavLink key={item.href} item={item} collapsed={collapsed} onClick={closeOnMobile} />
+                  ))}
+              </>
+            )}
+          </div>
+
+          {/* ADMINISTRACION */}
+          <div className="space-y-1 border-t pt-5">
+            <GroupLabel collapsed={collapsed}>Administracion</GroupLabel>
+            {adminNav.map((item) => (
+              <NavLink key={item.href} item={item} collapsed={collapsed} onClick={closeOnMobile} />
+            ))}
+          </div>
+
+          {/* CUMPLIMIENTO */}
           <div className="space-y-1 border-t pt-5">
             {policyNav.map((item) => (
-              <NavLink key={item.href} item={item} collapsed={collapsed} onClick={() => { if (window.innerWidth < 1280) setOpen(false) }} />
+              <NavLink key={item.href} item={item} collapsed={collapsed} onClick={closeOnMobile} />
             ))}
           </div>
         </nav>
@@ -200,12 +287,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Hamburger — always visible */}
             <button
               onClick={() => {
-                if (window.innerWidth >= 1280) {
-                  if (collapsed) { setCollapsed(false); setOpen(true) }
+                if (isDesktop) {
+                  if (collapsed) { setCollapsed(false); setOpenOverride(true) }
                   else if (open) { setCollapsed(true) }
-                  else { setOpen(true) }
+                  else { setOpenOverride(true) }
                 } else {
-                  setOpen((v) => !v)
+                  setOpenOverride(!open)
                 }
               }}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[#f2eadc] hover:text-primary"
@@ -227,7 +314,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Search */}
             <div className="hidden min-w-0 flex-1 items-center gap-3 rounded-md border bg-card px-3 py-2 sm:flex xl:max-w-md">
               <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span className="truncate text-sm text-muted-foreground">Buscar clientes, expedientes, audiencias o documentos</span>
+              <span className="truncate text-sm text-muted-foreground">Buscar personas, escrituras, juicios o documentos</span>
             </div>
 
             <div className="ml-auto flex items-center gap-3">

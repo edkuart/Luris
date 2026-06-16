@@ -13,6 +13,7 @@ import {
   UploadCloud,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DocumentsTable } from '@/components/transversal/documents-table'
 import {
   documentDeliveries,
   documentFolders,
@@ -20,13 +21,8 @@ import {
   documentReviewQueue,
   documents,
   documentVersions,
+  unifiedDocuments,
 } from '@/lib/mock-data'
-
-const documentStatusColor = {
-  Vigente: 'text-[#53665b]',
-  'En revision': 'text-[#b08d57]',
-  Borrador: 'text-[#6d6258]',
-} as const
 
 const reviewStatusColor = {
   Pendiente: 'text-[#b08d57]',
@@ -129,41 +125,10 @@ export default function DocumentosPage() {
         <Card>
           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
             <FileArchive className="h-4 w-4 text-[#53665b]" aria-hidden="true" />
-            <CardTitle>Repositorio por expediente</CardTitle>
+            <CardTitle>Repositorio del despacho</CardTitle>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="w-full min-w-[880px] text-left text-sm">
-              <thead className="border-b text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                <tr>
-                  <th className="py-3">Documento</th>
-                  <th>Expediente</th>
-                  <th>Tipo</th>
-                  <th>Version</th>
-                  <th>Estado</th>
-                  <th>Subido por</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {documents.map((document) => (
-                  <tr key={document.id} className="align-top">
-                    <td className="py-4 pr-4">
-                      <Link href={`/documentos/${document.id}`} className="font-semibold text-primary underline-offset-4 hover:underline luris-focus">
-                        {document.name}
-                      </Link>
-                      <p className="mt-1 text-xs text-muted-foreground">{document.caseTitle}</p>
-                    </td>
-                    <td className="pr-4">{document.caseNumber}</td>
-                    <td className="pr-4">{document.fileType} · {document.size}</td>
-                    <td className="pr-4">v{document.version}</td>
-                    <td className={`pr-4 font-semibold ${documentStatusColor[document.status]}`}>{document.status}</td>
-                    <td className="pr-4">
-                      <p>{document.uploadedBy}</p>
-                      <p className="text-xs text-muted-foreground">{document.uploadedAt}</p>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <CardContent>
+            <DocumentsTable docs={unifiedDocuments()} />
           </CardContent>
         </Card>
 

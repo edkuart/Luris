@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, BriefcaseBusiness } from 'lucide-react'
+import { ArrowLeft, BriefcaseBusiness, FileSignature } from 'lucide-react'
 import { ClientEditForm } from '@/components/clients/client-edit-form'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { apiFetch } from '@/lib/api'
-import { caseFiles, clients as mockClients } from '@/lib/mock-data'
+import { caseFiles, clients as mockClients, notarialInstruments } from '@/lib/mock-data'
 import { requireSession } from '@/server/auth/session'
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,15 +40,17 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
   if (!client) notFound()
 
+  const notarialItems = notarialInstruments.filter((instrument) => instrument.clientName === client.name)
+
   return (
     <div className="space-y-5">
       <Link href="/clientes" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Volver a clientes
+        <ArrowLeft className="h-4 w-4" /> Volver a personas
       </Link>
 
       <div>
         <h1 className="luris-display text-3xl font-bold text-primary">{client.name}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Detalle del cliente y expedientes asociados.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Persona con expedientes de juicio e instrumentos notariales asociados.</p>
       </div>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
@@ -75,18 +77,37 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <Card>
             <CardHeader className="flex flex-row items-center gap-2 space-y-0">
               <BriefcaseBusiness className="h-4 w-4 text-[#53665b]" />
-              <CardTitle>Expedientes asociados</CardTitle>
+              <CardTitle>Juicios asociados</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {client.caseFiles.length ? (
                 client.caseFiles.map((cf: { id: string; title: string; caseNumber: string | null; court: string | null; status: string }) => (
-                  <div key={cf.id} className="rounded-md border bg-secondary p-3">
+                  <Link key={cf.id} href={`/juicios/${cf.id}`} className="block rounded-md border bg-secondary p-3 transition-colors hover:border-[#b08d57]">
                     <p className="text-sm font-semibold text-primary">{cf.caseNumber ?? 'Sin numero'} · {cf.title}</p>
                     <p className="text-xs text-muted-foreground">{cf.court ?? 'Sin juzgado'} · {cf.status}</p>
-                  </div>
+                  </Link>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">Este cliente aun no tiene expedientes asociados.</p>
+                <p className="text-sm text-muted-foreground">Esta persona aun no tiene juicios asociados.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+              <FileSignature className="h-4 w-4 text-[#b08d57]" />
+              <CardTitle>Escrituras asociadas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {notarialItems.length ? (
+                notarialItems.map((instrument) => (
+                  <Link key={instrument.id} href={`/escrituras/${instrument.id}`} className="block rounded-md border bg-secondary p-3 transition-colors hover:border-[#b08d57]">
+                    <p className="text-sm font-semibold text-primary">{instrument.protocolNumber} · {instrument.title}</p>
+                    <p className="text-xs text-muted-foreground">{instrument.type} · {instrument.status}</p>
+                  </Link>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">Esta persona aun no comparece en escrituras.</p>
               )}
             </CardContent>
           </Card>

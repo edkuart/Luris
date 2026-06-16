@@ -44,9 +44,9 @@ export default function NewCasePage() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
         <div>
-          <Link href="/expedientes" className="inline-flex items-center gap-2 text-sm font-semibold text-primary luris-focus">
+          <Link href="/juicios" className="inline-flex items-center gap-2 text-sm font-semibold text-primary luris-focus">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Volver a expedientes
+            Volver a juicios
           </Link>
           <p className="mt-4 text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Asistente operativo</p>
           <h1 className="luris-display mt-1 text-3xl font-bold text-primary">Nuevo expediente desde plantilla</h1>

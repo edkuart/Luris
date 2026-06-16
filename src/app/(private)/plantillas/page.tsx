@@ -65,7 +65,7 @@ export default function TemplatesPage() {
             Base operativa para iniciar expedientes con fases, responsables, documentos requeridos, controles y riesgos.
           </p>
         </div>
-        <Link href="/expedientes/nuevo" className="rounded-md border bg-card px-4 py-3 text-sm font-semibold text-primary luris-focus">
+        <Link href="/juicios/nuevo" className="rounded-md border bg-card px-4 py-3 text-sm font-semibold text-primary luris-focus">
           Crear expediente con plantilla
         </Link>
       </div>

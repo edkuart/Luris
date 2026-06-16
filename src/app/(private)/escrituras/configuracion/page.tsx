@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, BookOpenCheck, FileCog, Hash, LibraryBig, Settings2 } from 'lucide-react'
+import { BookOpenCheck, FileCog, Hash, LibraryBig, Settings2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { firmProfile, notarialCorrelatives, notarialTemplates } from '@/lib/mock-data'
 
@@ -13,10 +13,6 @@ const policies = [
 export default function NotarialSettingsPage() {
   return (
     <div className="space-y-5">
-      <Link href="/notarial" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Volver a notarial
-      </Link>
-
       <div className="flex flex-col justify-between gap-3 xl:flex-row xl:items-end">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Configuracion notarial</p>
@@ -24,7 +20,7 @@ export default function NotarialSettingsPage() {
           <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             Preparacion de reglas internas para protocolo, escrituras, actas, legalizaciones y testimonios.
           </p>
-          <Link href="/notarial/generador" className="mt-2 inline-flex text-sm font-semibold text-primary underline-offset-4 hover:underline">
+          <Link href="/escrituras/generador" className="mt-2 inline-flex text-sm font-semibold text-primary underline-offset-4 hover:underline">
             Abrir generador documental
           </Link>
         </div>

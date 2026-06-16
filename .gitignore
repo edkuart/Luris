@@ -11,3 +11,5 @@ build
 coverage
 prisma/dev.db
 .tmp-screenshots
+
+.vercel

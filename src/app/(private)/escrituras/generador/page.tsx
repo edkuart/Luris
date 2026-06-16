@@ -1,5 +1,4 @@
-import Link from 'next/link'
-import { ArrowLeft, ClipboardCheck, FileText, PenLine, Send, Wand2 } from 'lucide-react'
+import { ClipboardCheck, FileText, PenLine, Send, Wand2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { notarialGeneratorActions, notarialGeneratorTemplates } from '@/lib/mock-data'
 
@@ -14,10 +13,6 @@ export default function NotarialGeneratorPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/notarial" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Volver a notarial
-      </Link>
-
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Generador documental notarial</p>
         <h1 className="luris-display mt-1 text-3xl font-bold text-primary">Plantillas, campos y borradores</h1>

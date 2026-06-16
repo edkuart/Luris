@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import {
-  ArrowLeft,
   CheckCircle2,
   FileArchive,
   FileCheck2,
@@ -35,10 +34,6 @@ const metrics = [
 export default function NotarialDocumentsPage() {
   return (
     <div className="space-y-6">
-      <Link href="/notarial" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Volver a notarial
-      </Link>
-
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Documentos notariales</p>
         <h1 className="luris-display mt-1 text-3xl font-bold text-primary">Recepcion, revision y emision</h1>
@@ -88,7 +83,7 @@ export default function NotarialDocumentsPage() {
                       </td>
                       <td>
                         {instrument ? (
-                          <Link href={`/notarial/${instrument.id}`} className="font-semibold text-primary underline-offset-4 hover:underline">
+                          <Link href={`/escrituras/${instrument.id}`} className="font-semibold text-primary underline-offset-4 hover:underline">
                             {instrument.deedNumber}
                           </Link>
                         ) : '-'}

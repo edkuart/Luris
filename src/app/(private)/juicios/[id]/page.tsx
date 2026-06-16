@@ -33,8 +33,8 @@ export default async function CaseFileDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-5">
-      <Link href="/expedientes" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Volver a expedientes
+      <Link href="/juicios" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
+        <ArrowLeft className="h-4 w-4" /> Volver a juicios
       </Link>
 
       <div className="flex flex-col justify-between gap-3 xl:flex-row xl:items-end">

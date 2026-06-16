@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, CalendarClock, CheckCircle2, Clock, MapPin, UserRoundCheck } from 'lucide-react'
+import { CalendarClock, CheckCircle2, Clock, MapPin, UserRoundCheck } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { notarialAppointmentFlow, notarialAppointments, notarialInstruments } from '@/lib/mock-data'
 
@@ -23,10 +23,6 @@ const metrics = [
 export default function NotarialAgendaPage() {
   return (
     <div className="space-y-6">
-      <Link href="/notarial" className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Volver a notarial
-      </Link>
-
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Agenda notarial</p>
         <h1 className="luris-display mt-1 text-3xl font-bold text-primary">Recepcion, firma, entrega y cierre</h1>
@@ -69,7 +65,7 @@ export default function NotarialAgendaPage() {
                       <p className="mt-1 font-semibold text-primary">{appointment.title}</p>
                       <p className="mt-1 text-sm text-muted-foreground">{appointment.clientName}</p>
                       {instrument ? (
-                        <Link href={`/notarial/${instrument.id}`} className="mt-1 inline-flex text-xs font-semibold text-primary underline-offset-4 hover:underline">
+                        <Link href={`/escrituras/${instrument.id}`} className="mt-1 inline-flex text-xs font-semibold text-primary underline-offset-4 hover:underline">
                           {instrument.deedNumber} · {instrument.protocolNumber}
                         </Link>
                       ) : null}
